@@ -1,36 +1,90 @@
 # OpenSpec project workflow template
 
-Reusable workflow for discovery, delivery and human acceptance. No permanent coordinator or runner required.
+A reusable workflow for discovery, delivery, cleanup, and explicit human acceptance. It supports several developer sessions without a permanent coordinator or runner.
 
-## Apply to another project
+The template is portable across Git projects on macOS/Linux or WSL. It does not assume a language, framework, game engine, CI system, or deployment platform.
 
-Ask the agent working in that project:
+## What it provides
 
-> Возьми шаблон из /Users/eaafonasev/Projects/openspec-project-template. Прочитай ADOPT.md и настрой проект по нему. Сохрани существующие правила, перенеси уникальные требования в канонические OpenSpec specs без потерь. Настрой explore, apply и inbox, общий planning root для параллельных сессий, проверки, поставку и уборку. Не запускай старые задачи и не выкатывай приложение в рамках настройки.
+`template/` is the payload to adapt into a target project:
 
-The payload is portable across Git projects on macOS/Linux (or WSL); it does not assume a game engine.
+- Three OpenSpec schemas: `flow-quick`, `flow-standard`, and `flow-initiative`.
+- Three agent skills: `flow-explore`, `flow-apply`, and `flow-inbox`.
+- A small Python helper that records lifecycle state, questions, dependencies, ownership, leases, and evidence directly beside OpenSpec changes.
+- An `AGENTS.md` fragment and focused rules for delivery, initiatives, and context efficiency.
 
-For another machine substitute the template's actual path. Start with [ADOPT.md](ADOPT.md).
+The template keeps OpenSpec changes and canonical specs as the source of truth. It does not add a second task database or a background service.
 
-## Entry points after adoption
+## Install into a project
 
-- `$flow-explore`: discuss a feature; recommend quick, standard or initiative; capture an agreed OpenSpec change.
-- `$flow-apply`: select one ready change or a related small batch; deliver, finalize, hand off for acceptance.
-- `$flow-inbox`: answer unresolved questions and accept published work, individually or in batches.
-- Feedback and acceptance can also be recorded in the original development session.
+Clone or copy this repository, then open a session in the target project and give the agent this instruction:
 
-These are custom skill names, not built-in OpenSpec CLI commands. Existing `$openspec-explore` and `$openspec-apply-change` can be used with project routing instructions; dedicated flow skills make the extra lifecycle explicit and survive `openspec update` without modifying generated skills.
+> Read the workflow template's ADOPT.md and adapt this project to it. Preserve existing project rules and history. Configure shared OpenSpec planning, explore, apply, inbox, checks, delivery, cleanup, and human acceptance. Do not resume old work or deploy the application while installing the workflow.
 
-## Contents
+Replace "the workflow template" with the repository path or URL available to the agent. Follow [ADOPT.md](ADOPT.md) for the full, reviewable adaptation procedure.
 
-`template/` is the payload. It contains an AGENTS fragment, project profile, three schemas, three skills, focused reference instructions and a small queue helper. `tests/` exercises state transitions, dependencies, concurrency ownership and human decisions.
+The installation is a project configuration change. It must discover the target project's actual main branch, checks, deployment policy, evidence location, and existing specification sources; the template intentionally leaves these fields unset.
 
-Validated against locally installed OpenSpec 1.10.0. Custom schema support is experimental upstream; revalidate after upgrades. No models are globally pinned, no production target is preauthorized, no packages or global skills are installed by adopting files alone.
+## Daily workflow
 
-The helper enforces structural transitions and verifies Git ancestry at merge. Semantic quality, deployment evidence and human identity still depend on the agent and supplied evidence. It cannot guarantee cleanup after power loss; unfinished finalization is retained and shown on next invocation.
+### Discuss a feature
 
-## Evidence and limits
+Use `$flow-explore`.
 
-Automated checks cover the lifecycle helper, concurrent claims, real Git ancestry, three schema validations and real OpenSpec create/status/apply/strict-validation fixtures. Skill frontmatter is checked with the skill-creator validator. A real project's deployment and complete multi-session adoption are not exercised by these fixtures; ADOPT.md requires checking those after adaptation.
+It explores the existing product and specs, then recommends one route:
 
-The helper does not itself merge, deploy, archive or delete resources. It validates workflow transitions and records evidence; agents perform operations using verified project tools. No instruction file can enforce user identity or recover a dead computer by itself. There is no background monitor; debt becomes visible on next inbox/apply invocation.
+- `quick` for a settled, bounded change with a known implementation path and concise verification.
+- `standard` for a feature or fix needing normal specs, design, and implementation tasks.
+- `initiative` for a large outcome split into independently deliverable stages.
+
+The agent records the agreed change in OpenSpec. It does not start implementation until you explicitly ask it to.
+
+### Implement work
+
+Use `$flow-apply`, optionally naming a change. Without a selection, it shows ready work and asks which item or related small batch to take.
+
+The worker claims the selected change, uses its own code worktree, verifies the result, integrates it, publishes it only if the project policy authorizes the target environment, preserves evidence, and cleans up resources it owns. It stops at `awaiting-acceptance`; a completed checkbox is never treated as your approval.
+
+Feedback can be sent in the same development session. The agent records it as a rework item in the unaccepted change or creates a linked change when it is new scope.
+
+### Review questions and acceptance
+
+Use `$flow-inbox`.
+
+It groups open questions, work awaiting acceptance, and interrupted finalization by initiative. You can answer a question or accept a report, change, or release there, or in the original development session. An answer is recorded first and becomes resolved only after the change, spec, or implementation reflects it.
+
+## Lifecycle
+
+```text
+draft → ready → implementing → verified → merged → deployed → finalizing
+                                                               ↓
+                                               awaiting-acceptance → accepted → archived
+                                                               ↓
+                                                        rework-required
+```
+
+Reports and initiatives use `published` in place of code merge/deployment. `blocked` and `paused` are separate conditions, so a deployed change with an unanswered question remains visible. Human acceptance is required for every change, including reports.
+
+Large initiatives are parent changes. Their children retain independent specs, delivery, acceptance, and history. A parent is accepted only after required children and the whole outcome have been accepted.
+
+## Verification
+
+Run from the repository root:
+
+```sh
+python3 -m unittest discover -s tests -v
+cd template
+openspec schema validate flow-quick --json
+openspec schema validate flow-standard --json
+openspec schema validate flow-initiative --json
+```
+
+The tests cover lifecycle transitions, concurrent claims, questions, dependencies, rework, acceptance, leases, cleanup debt, and Git ancestry for merges. They also create and strictly validate all three schemas with OpenSpec.
+
+After adapting the payload, run the schema commands from the target project's OpenSpec planning root instead.
+
+This template was validated with OpenSpec 1.10.0. Custom schemas are experimental upstream, so re-run the checks after upgrading OpenSpec.
+
+## Limits
+
+The helper records and validates workflow state. It does not perform a merge, deploy, archive, or deletion itself. Those operations remain project-specific and must be supported by real evidence. A sudden machine or process failure can still leave resources behind; the owning change stays in `finalizing` and is surfaced by the next inbox or apply session.
