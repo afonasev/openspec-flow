@@ -1,0 +1,31 @@
+{
+  "template_version": "1.0.0",
+  "planning_root": null,
+  "store_id": null,
+  "code_repo": null,
+  "main_branch": null,
+  "delivery_kind": "software",
+  "deploy_authorized": false,
+  "environment_role": "experimental",
+  "environment_url": null,
+  "commands": {
+    "focused_checks": null,
+    "required_checks": null,
+    "build": null,
+    "deploy": null,
+    "release_identity": null,
+    "smoke": null
+  },
+  "evidence_root": null,
+  "model_preferences": {
+    "implementation": "available balanced model / medium",
+    "mechanical": "available fast model",
+    "architecture": "available strong model"
+  },
+  "limits": {
+    "max_unsuccessful_attempts": 2,
+    "max_parallel_workers": null,
+    "task_token_budget": null
+  },
+  "adoption_status": "unconfigured"
+}

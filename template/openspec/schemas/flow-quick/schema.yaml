@@ -1,0 +1,29 @@
+name: flow-quick
+version: 1
+description: OpenSpec quick delivery with separate human acceptance
+artifacts:
+  - id: proposal
+    generates: "proposal.md"
+    description: proposal for quick change
+    template: proposal.md
+    instruction: "Record agreed outcome, scope, route and reason, impacted capabilities and acceptance. For initiative record child IDs and bounded end result. Never invent unresolved decisions."
+    requires: []
+  - id: specs
+    generates: "specs/**/*.md"
+    description: specs for quick change
+    template: spec.md
+    instruction: "Write behavior deltas with requirements and WHEN/THEN scenarios. If no behavior changes, use supported skip_specs metadata and no invented requirements."
+    requires: ["proposal"]
+  - id: tasks
+    generates: "tasks.md"
+    description: tasks for quick change
+    template: tasks.md
+    instruction: "Write checkboxes for implementation, checks, spec sync, merge, publication and finalization; human acceptance stays separate. Resolve blocking questions before readiness."
+    requires: ["proposal"]
+apply:
+  requires: [tasks]
+  tracks: tasks.md
+  instruction: |
+    Follow the project flow-apply lifecycle. Check readiness and required specs before implementation.
+    Execute tracked work through authorized publication and cleanup, then stop at awaiting-acceptance.
+    OpenSpec artifact completion is not human acceptance. Persist blocking questions before pausing.

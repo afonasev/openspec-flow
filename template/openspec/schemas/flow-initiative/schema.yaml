@@ -1,0 +1,23 @@
+name: flow-initiative
+version: 1
+description: OpenSpec initiative delivery with separate human acceptance
+artifacts:
+  - id: proposal
+    generates: "proposal.md"
+    description: proposal for initiative change
+    template: proposal.md
+    instruction: "Record agreed outcome, scope, route and reason, impacted capabilities and acceptance. For initiative record child IDs and bounded end result. Never invent unresolved decisions."
+    requires: []
+  - id: tasks
+    generates: "tasks.md"
+    description: tasks for initiative change
+    template: tasks.md
+    instruction: "Write checkboxes for implementation, checks, spec sync, merge, publication and finalization; human acceptance stays separate. Resolve blocking questions before readiness."
+    requires: ["proposal"]
+apply:
+  requires: [tasks]
+  tracks: tasks.md
+  instruction: |
+    Follow the project flow-apply lifecycle. Check readiness and required specs before implementation.
+    Execute tracked work through authorized publication and cleanup, then stop at awaiting-acceptance.
+    OpenSpec artifact completion is not human acceptance. Persist blocking questions before pausing.

@@ -1,0 +1,4 @@
+# Merge into the shared planning repository's .gitignore.
+.flow.lock
+.flow-leases.json
+.flow-tmp-*

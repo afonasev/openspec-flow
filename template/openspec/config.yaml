@@ -1,0 +1,13 @@
+schema: flow-standard
+context: |
+  Resolve the adopted project profile before implementation. Canonical specs describe current
+  integrated requirements; changes describe proposed deltas. Human acceptance is tracked separately.
+  Use flow-explore, flow-apply and flow-inbox lifecycle instructions. Do not invent deployment commands.
+operations:
+  apply:
+    guidance:
+      - Include verification, spec synchronization, merge, authorized publication and finalization before handoff.
+      - Agent task completion is not human acceptance; stop at awaiting-acceptance.
+  archive:
+    guidance:
+      - Require explicit acceptance and resolved questions before archive; preserve newer canonical specs.
