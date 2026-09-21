@@ -17,11 +17,17 @@ The template keeps OpenSpec changes and canonical specs as the source of truth. 
 
 ## Install into a project
 
-Clone or copy this repository, then open a session in the target project and give the agent this instruction:
+Clone the template, then open a session in the target project:
 
-> Read the workflow template's ADOPT.md and adapt this project to it. Preserve existing project rules and history. Configure shared OpenSpec planning, explore, apply, inbox, checks, delivery, cleanup, and human acceptance. Do not resume old work or deploy the application while installing the workflow.
+```sh
+git clone https://github.com/afonasev/openspec-flow.git
+```
 
-Replace "the workflow template" with the repository path or URL available to the agent. Follow [ADOPT.md](ADOPT.md) for the full, reviewable adaptation procedure.
+Give the agent this instruction:
+
+> Read https://github.com/afonasev/openspec-flow/blob/main/ADOPT.md and adapt this project to it. Preserve existing project rules and history. Configure shared OpenSpec planning, explore, apply, inbox, checks, delivery, cleanup, and human acceptance. Do not resume old work or deploy the application while installing the workflow.
+
+Follow [ADOPT.md](ADOPT.md) for the full, reviewable adaptation procedure.
 
 The installation is a project configuration change. It must discover the target project's actual main branch, checks, deployment policy, evidence location, and existing specification sources; the template intentionally leaves these fields unset.
 
