@@ -1,5 +1,7 @@
 # OpenSpec project workflow template
 
+[Русское описание](README.ru.md)
+
 A reusable workflow for discovery, delivery, cleanup, and explicit human acceptance. It supports several developer sessions without a permanent coordinator or runner.
 
 The template is portable across Git projects on macOS/Linux or WSL. It does not assume a language, framework, game engine, CI system, or deployment platform.
