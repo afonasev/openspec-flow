@@ -1,5 +1,5 @@
 {
-  "template_version": "1.0.0",
+  "template_version": "1.1.0",
   "planning_root": null,
   "store_id": null,
   "code_repo": null,
@@ -18,9 +18,10 @@
   },
   "evidence_root": null,
   "model_preferences": {
-    "implementation": "available balanced model / medium",
-    "mechanical": "available fast model",
-    "architecture": "available strong model"
+    "implementation": "gpt-6-sol / medium",
+    "mechanical": "gpt-6-luna / medium",
+    "trivial_when_available": "gpt-5.3-codex-spark / medium",
+    "architecture": "gpt-6-astra / high"
   },
   "limits": {
     "max_unsuccessful_attempts": 2,

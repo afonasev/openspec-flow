@@ -17,6 +17,10 @@ The template is portable across Git projects on macOS/Linux or WSL. It does not 
 
 The template keeps OpenSpec changes and canonical specs as the source of truth. It does not add a second task database or a background service.
 
+## Model choice
+
+Use GPT-6 Sol for normal implementation, GPT-6 Luna for clear bounded tasks, Spark when available for tiny mechanical edits, and GPT-6 Astra for architecture, complex debugging, or when you explicitly request it. The project's workflow profile records these preferences without forcing a session-wide model; your explicit choice always wins.
+
 ## Install into a project
 
 Open a session in the target project and give the agent this single instruction:
@@ -26,6 +30,14 @@ Open a session in the target project and give the agent this single instruction:
 The agent reads the published template and copies only the files required by [ADOPT.md](ADOPT.md); no separate clone is required.
 
 The installation is a project configuration change. It must discover the target project's actual main branch, checks, deployment policy, evidence location, and existing specification sources; the template intentionally leaves these fields unset.
+
+## Update an adopted project
+
+When this repository changes, open a session in the target project and give the agent this single instruction:
+
+> Read https://github.com/afonasev/openspec-flow/blob/main/ADOPT.md and update this project's workflow from the latest template. Compare the recorded template version and all managed files with the repository first. Preserve project-specific rules, planning records, specs, active changes, delivery evidence, and deployment policy. Apply only relevant template changes, validate the updated schemas, skills, and helper, then report the exact changes. Do not resume work or deploy the application during the update.
+
+The project profile records the template version or commit used at the previous installation. The update is a merge, not a wholesale replacement: it must keep project-specific instructions and any local workflow extensions.
 
 ## Daily workflow
 
