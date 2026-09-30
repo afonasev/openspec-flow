@@ -1,8 +1,9 @@
 {
-  "template_version": "1.1.0",
-  "planning_root": null,
+  "template_version": "1.2.0",
+  "planning_layout": "in-repo",
+  "planning_root": ".",
   "store_id": null,
-  "code_repo": null,
+  "code_repo": ".",
   "main_branch": null,
   "delivery_kind": "software",
   "deploy_authorized": false,

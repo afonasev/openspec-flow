@@ -15,7 +15,9 @@ The template is portable across Git projects on macOS/Linux or WSL. It does not 
 - A small Python helper that records lifecycle state, questions, dependencies, ownership, leases, and evidence directly beside OpenSpec changes.
 - An `AGENTS.md` fragment and focused rules for delivery, initiatives, and context efficiency.
 
-The template keeps OpenSpec changes and canonical specs as the source of truth. It does not add a second task database or a background service.
+The template keeps OpenSpec changes and canonical specs as the source of truth. By default they live inside the code repository, so code and requirements can be reviewed in one Git history. It does not add a second task database or a background service.
+
+Linked worktrees share a local `.git/flow` coordination directory for locks, leases and pointers to live delivery records. The helper refuses a new claim from a branch behind main, and a worker record stays pinned until its exact state is integrated into main. Before removing the worker worktree, run helper `handoff` from main; after committing the owner-free record there, run `unpin`. Git commits carry the plans between branches and clones. Separate clones do not share local leases. Existing installations may retain a standalone shared planning checkout by setting `planning_layout: standalone`.
 
 ## Model choice
 
@@ -25,7 +27,7 @@ Use GPT-6 Sol for normal implementation, GPT-6 Luna for clear bounded tasks, Spa
 
 Open a session in the target project and give the agent this single instruction:
 
-> Read https://github.com/afonasev/openspec-flow/blob/main/ADOPT.md and adapt this project to it. Preserve existing project rules and history. Configure shared OpenSpec planning, explore, apply, inbox, checks, delivery, cleanup, and human acceptance. Do not resume old work or deploy the application while installing the workflow.
+> Read https://github.com/afonasev/openspec-flow/blob/main/ADOPT.md and adapt this project to it. Preserve existing project rules and history. Put OpenSpec planning in the code repository by default; retain a configured standalone planning store if this project already needs one. Configure explore, apply, inbox, checks, delivery, cleanup, and human acceptance. Do not resume old work or deploy the application while installing the workflow.
 
 The agent reads the published template and copies only the files required by [ADOPT.md](ADOPT.md); no separate clone is required.
 
@@ -93,9 +95,9 @@ openspec schema validate flow-standard --json
 openspec schema validate flow-initiative --json
 ```
 
-The tests cover lifecycle transitions, concurrent claims, questions, dependencies, rework, acceptance, leases, cleanup debt, and Git ancestry for merges. They also create and strictly validate all three schemas with OpenSpec.
+The tests cover lifecycle transitions, concurrent claims, questions, dependencies, rework, acceptance, leases, cleanup debt, Git ancestry for merges, and linked worktree handoff/stale-branch behavior. They also create and strictly validate all three schemas with OpenSpec.
 
-After adapting the payload, run the schema commands from the target project's OpenSpec planning root instead.
+After adapting the payload, run the schema commands from the target project's code worktree in the default layout, or its configured standalone planning root.
 
 This template was validated with OpenSpec 1.10.0. Custom schemas are experimental upstream, so re-run the checks after upgrading OpenSpec.
 

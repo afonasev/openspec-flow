@@ -32,10 +32,70 @@ class Flow:
         self.root = Path(root).resolve()
         if not (self.root/'openspec/changes').is_dir():
             raise ValueError('Planning root must contain openspec/changes (initialize OpenSpec first)')
+        profile = self.root/'workflow/project.json'
+        config = json.loads(profile.read_text()) if profile.is_file() else {}
+        self.layout = config.get('planning_layout', 'standalone')
+        if self.layout not in {'in-repo', 'standalone'}: raise ValueError('Unknown planning_layout')
+        self.coordination = self.root
+        if self.layout == 'in-repo':
+            self.main_ref = config.get('main_branch')
+            if not self.main_ref: raise ValueError('In-repo planning requires main_branch in workflow/project.json')
+            top = subprocess.run(['git','-C',str(self.root),'rev-parse','--show-toplevel'],capture_output=True,text=True)
+            common = subprocess.run(['git','-C',str(self.root),'rev-parse','--git-common-dir'],capture_output=True,text=True)
+            if top.returncode or common.returncode or Path(top.stdout.strip()).resolve()!=self.root:
+                raise ValueError('In-repo planning root must be a Git worktree root')
+            git_dir = Path(common.stdout.strip())
+            self.coordination = (git_dir if git_dir.is_absolute() else self.root/git_dir).resolve()/'flow'
+
+    def pins(self):
+        path=self.coordination/'claims.json'
+        return json.loads(path.read_text()) if path.is_file() else {}
+
+    def assert_fresh(self):
+        if self.layout == 'in-repo':
+            check=subprocess.run(['git','-C',str(self.root),'merge-base','--is-ancestor',self.main_ref,'HEAD'],capture_output=True)
+            if check.returncode: raise ValueError('Planning worktree is behind main; merge or rebase before claiming or creating a change')
+
+    def on_main(self,path,d):
+        relative=path.relative_to(self.root).as_posix()
+        show=subprocess.run(['git','-C',str(self.root),'show',f'{self.main_ref}:{relative}'],capture_output=True,text=True)
+        return show.returncode==0 and json.loads(show.stdout)==d
+
+    def handoff(self,cid):
+        if self.layout != 'in-repo': raise ValueError('handoff is only used with in-repo planning')
+        branch=subprocess.run(['git','-C',str(self.root),'symbolic-ref','--short','HEAD'],capture_output=True,text=True)
+        if branch.returncode or branch.stdout.strip()!=self.main_ref:
+            raise ValueError('Handoff must run from the main branch worktree')
+        pins=self.pins();pin=pins.get(cid)
+        if not pin: raise ValueError('No live record pointer')
+        old=Path(pin['path'])
+        if not old.is_file(): raise ValueError('Live record missing; inspect owner before recovery: '+str(old))
+        relative=old.relative_to(Path(pin['worktree']))
+        path=self.root/relative
+        if not path.is_file(): raise ValueError('Integrated delivery record missing in main worktree')
+        d=json.loads(path.read_text())
+        if d!=json.loads(old.read_text()) or not self.on_main(path,d):
+            raise ValueError('Integrate the exact live delivery record into main before handoff')
+        pins[cid]={'owner':d['owner'],'worktree':str(self.root),'path':str(path.resolve())}
+        atomic(self.coordination/'claims.json',pins)
+        return {'id':cid,'worktree':str(self.root)}
+
+    def unpin(self,cid):
+        if self.layout != 'in-repo': raise ValueError('unpin is only used with in-repo planning')
+        pins=self.pins(); pin=pins.get(cid)
+        if not pin: raise ValueError('No live record pointer')
+        path=Path(pin['path'])
+        if not path.is_relative_to(self.root): raise ValueError('Live record belongs to another worktree')
+        d=json.loads(path.read_text())
+        if d['owner']: raise ValueError('Release the owner before unpinning')
+        if not self.on_main(path,d): raise ValueError('Commit and integrate the exact delivery record into main before unpinning')
+        del pins[cid];atomic(self.coordination/'claims.json',pins)
+        return {'id':cid,'integrated':True}
 
     @contextlib.contextmanager
     def locked(self):
-        with (self.root/'.flow.lock').open('a') as f:
+        self.coordination.mkdir(parents=True,exist_ok=True)
+        with (self.coordination/'.flow.lock').open('a') as f:
             fcntl.flock(f, fcntl.LOCK_EX)
             yield
 
@@ -45,6 +105,14 @@ class Flow:
             d = json.loads(path.read_text())
             if d['id'] in result: raise ValueError('Duplicate change ID: '+d['id'])
             result[d['id']] = (path,d)
+        if self.layout == 'in-repo':
+            for cid,pin in self.pins().items():
+                path=Path(pin['path'])
+                if not path.is_file(): raise ValueError('Live record missing; inspect owner before recovery: '+str(path))
+                d=json.loads(path.read_text())
+                if d['id']!=cid or d['owner']!=pin['owner']:
+                    raise ValueError('Live record disagrees with pointer: '+cid)
+                result[cid]=(path,d)
         return result
 
     def get(self, cid):
@@ -52,11 +120,20 @@ class Flow:
         except KeyError: raise ValueError('Unknown change: '+cid)
 
     def save(self, path, d, event, **data):
+        if self.layout == 'in-repo':
+            pin=self.pins().get(d['id'])
+            if pin and Path(pin['path'])!=path.resolve(): raise ValueError('Change is active in '+pin['worktree'])
+            if not path.is_relative_to(self.root): raise ValueError('Change belongs to another worktree')
         d['history'].append({'at':now(),'event':event,**data})
         atomic(path,d)
+        if self.layout == 'in-repo':
+            pins=self.pins()
+            pins[d['id']]={'owner':d['owner'],'worktree':str(self.root),'path':str(path.resolve())}
+            atomic(self.coordination/'claims.json',pins)
         return d
 
     def init(self, cid, route='standard', kind='software', parent=None):
+        self.assert_fresh()
         if not re.fullmatch('[a-z0-9]+(?:-[a-z0-9]+)*',cid): raise ValueError('Invalid change ID')
         directory=self.root/'openspec/changes'/cid
         if not (directory/'.openspec.yaml').is_file(): raise ValueError('Scaffold with openspec new change first')
@@ -88,6 +165,7 @@ class Flow:
         return errors
 
     def claim(self, cid, owner):
+        self.assert_fresh()
         p,d=self.get(cid)
         if d['stage'] in {'accepted','archived','cancelled','awaiting-acceptance'}: raise ValueError('Not claimable at this stage')
         if d['owner'] not in {None,owner}: raise ValueError('Already claimed by '+d['owner'])
@@ -176,6 +254,7 @@ class Flow:
         return self.save(p,d,'transition',previous=old,stage=target,decision=decision,source=source)
 
     def inbox(self):
+        self.assert_fresh()
         result=[]
         for _,d in self.records().values():
             qs=[q for q in d['questions'] if q['status']!='resolved']
@@ -185,7 +264,7 @@ class Flow:
 
     def lease(self,action,name,owner,reason=None):
         if not re.fullmatch('[a-z][a-z0-9-]*',name): raise ValueError('Invalid lease name')
-        p=self.root/'.flow-leases.json'; data=json.loads(p.read_text()) if p.exists() else {}
+        p=self.coordination/'.flow-leases.json'; data=json.loads(p.read_text()) if p.exists() else {}
         current=data.get(name)
         if action=='acquire':
             if current and current['owner']!=owner: raise ValueError('Lease held by '+current['owner'])
@@ -216,6 +295,8 @@ def main():
     a=sub.add_parser('pause'); a.add_argument('id'); a.add_argument('--reason',required=True)
     a=sub.add_parser('resume'); a.add_argument('id'); a.add_argument('--reason',required=True)
     a=sub.add_parser('lease'); a.add_argument('action',choices=['acquire','release','recover']); a.add_argument('name'); a.add_argument('--owner',required=True); a.add_argument('--reason')
+    a=sub.add_parser('unpin'); a.add_argument('id')
+    a=sub.add_parser('handoff'); a.add_argument('id')
     a=sub.add_parser('usage'); a.add_argument('id'); a.add_argument('--json-file',required=True)
     args=p.parse_args(); f=Flow(args.root)
     try:
@@ -231,6 +312,8 @@ def main():
             elif c=='transition':out=f.transition(args.id,args.stage,args.owner,args.decision,args.source)
             elif c=='dependency':out=f.dependency(args.id,args.dependency,args.threshold)
             elif c=='lease':out=f.lease(args.action,args.name,args.owner,args.reason)
+            elif c=='unpin':out=f.unpin(args.id)
+            elif c=='handoff':out=f.handoff(args.id)
             elif c=='usage':
                 path,d=f.get(args.id); d['runs'].append(json.loads(Path(args.json_file).read_text()));out=f.save(path,d,'usage-recorded')
             else:

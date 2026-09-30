@@ -1,4 +1,6 @@
-# Merge into the shared planning repository's .gitignore.
+# Merge into the target repository's .gitignore. In-repo coordination lives in
+# the Git common directory and is already outside the tracked worktree.
 .flow.lock
 .flow-leases.json
+.flow/
 .flow-tmp-*

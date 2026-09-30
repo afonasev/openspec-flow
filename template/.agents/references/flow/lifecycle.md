@@ -1,6 +1,6 @@
 # Lifecycle and shared records
 
-Source: one shared OpenSpec change directory. `delivery.json` is the machine record; tasks.md is the executable checklist; acceptance.md is the human-readable evidence/scenario guide. Do not duplicate status in handoff spreadsheets or unrelated task trackers. Helper operations are atomic under a planning-root file lock. Full multi-file edits/commits additionally use the planning lease.
+Source: the configured OpenSpec `openspec/` directory. In-repo mode keeps canonical files in each Git worktree and shares only locks, leases and live delivery-record pointers through the Git common directory. Standalone mode keeps one shared planning checkout. `delivery.json` is the machine record; tasks.md is the executable checklist; acceptance.md is the human-readable evidence/scenario guide. Do not duplicate status in handoff spreadsheets or unrelated task trackers. Helper operations are atomic under the layout's file lock. Full multi-file edits/commits additionally use the planning lease.
 
 Stages: draft → ready → implementing → verified → merged → deployed → finalizing → awaiting-acceptance → accepted → archived. A report/initiative uses verified → published → finalizing (no fake deploy). rework-required → implementing. cancelled is explicit, preserves reasons/history. blocked is derived from open/answered blocking questions and dependencies, not a replacement for stage. pauses are explicit and sticky.
 
@@ -16,7 +16,7 @@ CLI: `python3 tools/flow.py --root ROOT inbox`; run `--help` for all commands. J
 
 ## Helper examples
 
-Run from the code repository; ROOT is the one shared planning root. Scaffold with OpenSpec first.
+In-repo mode: run from the current code worktree with ROOT `.` and no OpenSpec `--store`. Standalone mode: ROOT is its one shared planning root. Scaffold with OpenSpec first. In-repo `init`, `claim`, and `inbox` require main to be an ancestor of the current HEAD. A pinned delivery record remains visible to linked worktrees until integrated into main and explicitly unpinned.
 
 ```sh
 python3 tools/flow.py --root ROOT init add-feature --route quick --kind software
@@ -28,6 +28,8 @@ python3 tools/flow.py --root ROOT question add-feature 'Should completion unlock
 python3 tools/flow.py --root ROOT answer add-feature Q1 --answer 'Yes' --source 'user message reference' --resolution 'Requirement and task updated'
 python3 tools/flow.py --root ROOT inbox
 ```
+
+In-repo cleanup: commit and integrate the exact live `delivery.json`, then run `python3 tools/flow.py --root . handoff ID` from the stable main worktree. The pointer moves there, so the worker worktree can be removed safely. After finalization or acceptance updates are committed on main and the record has no owner, run `python3 tools/flow.py --root . unpin ID`. Unpin an accepted record before moving its directory into the OpenSpec archive; commit and unpin the new archived record afterward. A missing pinned path is a recovery issue; inspect it rather than deleting the pointer blindly. Distinct clones and machines do not share these local locks or pointers.
 
 Use temporary payload files outside the source checkout; remove only those owned files afterward. Evidence values should be structured JSON with exact command/result/revision/path, not a bare 'done'. Evidence keys:
 
