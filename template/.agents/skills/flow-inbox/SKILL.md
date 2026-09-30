@@ -3,7 +3,7 @@ name: flow-inbox
 description: Collect unanswered human questions, pending acceptance and interrupted finalization across OpenSpec changes; record decisions and follow-up fixes.
 ---
 
-Resolve shared planning root and call helper inbox. Read lifecycle.md. Present blocking questions first, then pending result acceptance, then finalization debt, grouped by initiative and required setup. Surface paused work but do not resume it. Build view from all active and archived records; never rely on this conversation's memory.
+Resolve the configured planning layout and call helper inbox from a current worktree. In-repo mode uses `--root .` and requires current main history; standalone mode uses its shared planning root. Read lifecycle.md. Present blocking questions first, then pending result acceptance, then finalization debt, grouped by initiative and required setup. Surface paused work but do not resume it. Build view from all active and archived records; never rely on this conversation's memory.
 
 Ask one coherent group at a time. Persist answer and source on existing question ID. Mark resolved only after applying the decision to artifacts or recording a verified handoff requiring worker acknowledgement. Do not race an active writer; use planning lease and coordinate revision changes.
 
